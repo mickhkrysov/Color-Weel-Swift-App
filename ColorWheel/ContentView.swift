@@ -22,7 +22,7 @@ struct ColorWheelScreen: View {
     @State private var sat: Double = 0.55
     @State private var brightness: Double = 1.0
 
-    private let wheelSize: CGFloat = 520
+    private let wheelSize: CGFloat = 300
 
     var selectedColor: Color {
         Color(hue: hue, saturation: sat, brightness: brightness)
@@ -30,7 +30,6 @@ struct ColorWheelScreen: View {
 
     var body: some View {
         ZStack {
-            // Background like screenshot (soft light)
             LinearGradient(
                 colors: [Color.white, Color(white: 0.96)],
                 startPoint: .top,
@@ -39,15 +38,14 @@ struct ColorWheelScreen: View {
             .ignoresSafeArea()
 
             VStack(alignment: .leading, spacing: 26) {
-                Text("Pick a colour.")
-                    .font(.system(size: 60, weight: .heavy, design: .default))
+                Text(" Pick a colour.")
+                    .font(.system(size: 40, weight: .heavy, design: .default))
                     .foregroundStyle(.black)
                     .padding(.top, 30)
                     .padding(.leading, 20)
 
                 // Wheel "card" area
                 ZStack {
-                    // soft shadow behind the wheel, like a raised disc
                     Circle()
                         .fill(Color.white)
                         .frame(width: wheelSize + 40, height: wheelSize + 40)
@@ -73,11 +71,14 @@ struct ColorWheelScreen: View {
                 }
                 .frame(maxWidth: .infinity)
 
-                // Slider like screenshot (pill with knob)
                 VStack(spacing: 16) {
-                    // preview strip (optional, looks nice and matches the vibe)
+                    // Brightness slider
+                    Slider(value: $brightness, in: 0.0...1.0)
+                        .tint(selectedColor)
+                        .padding(.horizontal, 34)
+                    // preview strip
                     RoundedRectangle(cornerRadius: 26, style: .continuous)
-                        .fill(selectedColor.opacity(0.22))
+                        .fill(selectedColor.opacity(1))
                         .overlay(
                             RoundedRectangle(cornerRadius: 26, style: .continuous)
                                 .stroke(Color.black.opacity(0.10), lineWidth: 6)
@@ -85,18 +86,11 @@ struct ColorWheelScreen: View {
                         .frame(height: 70)
                         .padding(.horizontal, 24)
                         .overlay(alignment: .trailing) {
-                            // fake knob ring style
-                            Circle()
-                                .fill(Color.clear)
-                                .overlay(Circle().stroke(Color.black.opacity(0.18), lineWidth: 6))
-                                .frame(width: 64, height: 64)
-                                .padding(.trailing, 30)
                         }
-
-                    // Brightness slider (keeps the same look, but actually works)
-                    Slider(value: $brightness, in: 0.0...1.0)
-                        .tint(selectedColor) // if you want it always mint like screenshot, change to .mint
-                        .padding(.horizontal, 34)
+                    //HEX Code
+                    Text(selectedColor.toHex())
+                        .font(.system(size: 22, weight: .bold, design: .monospaced))
+                        .padding()
                 }
                 .padding(.bottom, 30)
 
@@ -131,7 +125,7 @@ struct ColorWheel: View {
                         )
                     )
 
-                // Saturation: white in center -> transparent at edge (so center is pale/white-ish)
+                // Saturation: white in center and saturated at edge (so center is pale/white-ish)
                 Circle()
                     .fill(
                         RadialGradient(
@@ -153,12 +147,10 @@ struct ColorWheel: View {
                         let dx = value.location.x - center.x
                         let dy = value.location.y - center.y
                         let dist = sqrt(dx*dx + dy*dy)
-
                         // clamp to circle
                         let clampedDist = min(dist, radius)
                         sat = Double(clampedDist / radius)
-
-                        // angle -> hue (0..1)
+                        // angle goes to hue (0..1)
                         var angle = atan2(dy, dx) // -pi..pi
                         if angle < 0 { angle += 2 * .pi } // 0..2pi
                         hue = Double(angle / (2 * .pi))
@@ -168,7 +160,6 @@ struct ColorWheel: View {
     }
 }
 
-/// Black dot positioned based on hue + saturation.
 struct SelectionDot: View {
     let hue: Double
     let sat: Double
@@ -179,7 +170,7 @@ struct SelectionDot: View {
         let angle = CGFloat(hue) * 2 * .pi
         let r = CGFloat(sat) * radius
 
-        // Convert polar -> cartesian (centered)
+        // Convert polar -> cartesian
         let x = cos(angle) * r
         let y = sin(angle) * r
 
@@ -187,6 +178,26 @@ struct SelectionDot: View {
             .fill(Color.black)
             .frame(width: 18, height: 18)
             .offset(x: x, y: y)
-            .shadow(color: Color.black.opacity(0.25), radius: 4, x: 0, y: 2)
+            .shadow(color: Color.black.opacity(0.10), radius: 4, x: 0, y: 2)
     }
+}
+
+// displays the HEX code
+extension Color {
+
+    func toHex() -> String {
+        let uiColor = UIColor(self)
+
+        var r: CGFloat = 0
+        var g: CGFloat = 0
+        var b: CGFloat = 0
+        var a: CGFloat = 0
+
+        uiColor.getRed(&r, green: &g, blue: &b, alpha: &a)
+
+        let rgb = (Int)(r*255)<<16 | (Int)(g*255)<<8 | (Int)(b*255)
+
+        return String(format:"#%06X", rgb)
+    }
+
 }
